@@ -2,6 +2,50 @@
 
 Running log of non-obvious choices made autonomously. Newest first.
 
+## D9 — Test correction: how a safety violation is probed (2026-07-27)
+The original `test_violations_hold_the_previous_valid_pose` fed the checker
+`[home, home, bad, home]`, where `bad` was a distant self-colliding pose, and
+asserted the emitted frame equalled the previous one. It failed — correctly.
+
+The safety pass applies the velocity/acceleration clamp **before** the collision
+check, so a one-frame jump to a distant pose is never executed: the arm takes a
+small, legal step toward it and that intermediate pose is collision-free. No
+unsafe sample is emitted, which is the property that actually matters, but no
+hold is triggered either, because nothing was ever violated.
+
+The ordering is not incidental — it is forced. A hard hold applied *before* the
+velocity clamp would drop the joint velocity to zero in one frame, producing an
+acceleration spike that violates the smoothness acceptance test. Both
+requirements come from the brief, and clamping first is the only ordering that
+satisfies both.
+
+So the test was wrong, not the code. It was replaced with a **stronger** pair:
+candidates that ramp steadily from home into a colliding pose (which a real bad
+retargeting looks like, and which the limiter cannot dodge), asserting that
+(a) zero colliding poses are ever emitted, (b) holds are recorded in the report,
+and (c) once blocked, the output stops advancing entirely. Measured behaviour:
+the first colliding *candidate* is frame 171/200, zero colliding frames are
+emitted, 29 frames are held, and post-hold motion is exactly 0.0.
+
+## D8 — Shared marker-size constant (2026-07-27)
+End-to-end error was a suspiciously flat ~216 mm. Cause: `MarkerConfig` assumed
+a 0.06 m marker while the synthetic renderer drew a 0.08 m one. Depth from a
+fiducial scales linearly with the assumed side length, so the 1.333x mismatch
+became a pure range error (0.85 m camera distance x 0.25 = 212 mm). Both now
+import a single `DEFAULT_MARKER_SIZE`, so the two cannot drift apart again.
+Post-fix error: 34 mm.
+
+## D8b — Gripper contacts are not self-collisions (2026-07-27)
+After the size fix, 16 frames of a *known collision-free* trajectory were still
+flagged. Every contact was `left_finger` vs `right_finger`: a closed parallel
+gripper resting against itself. Touching is what a gripper does, so contacts
+internal to the gripper are excluded from the self-collision test. The excluded
+bodies are derived from the config's `gripper.joints`, so this stays
+embodiment-agnostic — no part names are hard-coded. The reference pose also
+parks the fingers open rather than at `qpos0` (fully closed).
+Post-fix error: **6.2 mm position RMSE, 2.2 deg orientation RMSE**, zero holds,
+zero collisions.
+
 ## D7 — ArUco marker frame convention (2026-07-27)
 Initial round-trip tests recovered poses ~180° off with ~0.5 m position error.
 Root cause: OpenCV's `SOLVEPNP_IPPE_SQUARE` (and the deprecated

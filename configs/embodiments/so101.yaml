@@ -1,0 +1,46 @@
+name: so101
+robot_type: so101
+
+# Second embodiment, added to prove the retargeting layer is data-driven: this
+# file is the entire diff. No code in vid2traj branches on the robot's name.
+model:
+  path: assets/models/so101/so_arm100.xml
+  ee_site: tcp
+
+# Five arm joints. Unlike the Panda this cannot reach an arbitrary 6-DOF pose,
+# which is exactly why it is the second embodiment (see DECISIONS D4).
+arm_joints: [Rotation, Pitch, Elbow, Wrist_Pitch, Wrist_Roll]
+home: [0.0, -1.57, 1.57, 1.57, -1.57]
+
+gripper:
+  joints: [Jaw]
+  limits: [-0.174, 1.75]   # radians of jaw travel
+  open: 1.75
+  closed: 0.0
+
+limits:
+  # Feetech STS3215 serial bus servos: conservative, well inside stall.
+  velocity: [3.0, 3.0, 3.0, 3.0, 3.0]          # rad/s
+  acceleration: [12.0, 12.0, 12.0, 12.0, 12.0] # rad/s^2
+  velocity_scale: 1.0
+  joint_margin: 0.02
+
+retarget:
+  wrist_to_ee:
+    position: [0.0, 0.0, 0.06]
+    quaternion: [1.0, 0.0, 0.0, 0.0]
+  # Five joints cannot satisfy a full 6-DOF pose, so orientation is a soft
+  # preference and convergence is judged on position alone.
+  position_only: true
+  orientation_weight: 0.3
+
+ik:
+  damping: 0.08
+  max_iters: 80
+  tol_position: 0.002
+  tol_orientation: 0.05
+  null_space_gain: 0.02
+  step_limit: 0.2
+
+safety:
+  collision_margin: 0.0

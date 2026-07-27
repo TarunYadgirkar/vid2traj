@@ -1,0 +1,44 @@
+name: franka_panda
+robot_type: franka_panda
+
+model:
+  path: assets/models/franka_panda/panda.xml
+  ee_site: tcp
+
+# 7 revolute joints realizing a 6-DOF task space with one redundant DOF.
+# See DECISIONS D4 for why "6-DOF arm" in the brief maps to this model.
+arm_joints: [joint1, joint2, joint3, joint4, joint5, joint6, joint7]
+home: [0.0, 0.0, 0.0, -1.57079, 0.0, 1.57079, -0.7853]
+
+gripper:
+  joints: [finger_joint1, finger_joint2]
+  limits: [0.0, 0.04]   # per-finger travel, metres
+  open: 0.04
+  closed: 0.0
+
+limits:
+  # Franka Emika Panda datasheet values.
+  velocity: [2.175, 2.175, 2.175, 2.175, 2.610, 2.610, 2.610]      # rad/s
+  acceleration: [15.0, 7.5, 10.0, 12.5, 15.0, 20.0, 20.0]          # rad/s^2
+  velocity_scale: 1.0
+  joint_margin: 0.02    # rad kept clear of the hard limits
+
+retarget:
+  # Pose of the end-effector expressed in the observed wrist frame: the marker
+  # (or hand) sits 6 cm behind the TCP along the gripper axis.
+  wrist_to_ee:
+    position: [0.0, 0.0, 0.06]
+    quaternion: [1.0, 0.0, 0.0, 0.0]
+  position_only: false
+  orientation_weight: 1.0
+
+ik:
+  damping: 0.05
+  max_iters: 60
+  tol_position: 0.001
+  tol_orientation: 0.01
+  null_space_gain: 0.02
+  step_limit: 0.2
+
+safety:
+  collision_margin: 0.0
