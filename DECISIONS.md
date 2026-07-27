@@ -2,6 +2,26 @@
 
 Running log of non-obvious choices made autonomously. Newest first.
 
+## D7 — ArUco marker frame convention (2026-07-27)
+Initial round-trip tests recovered poses ~180° off with ~0.5 m position error.
+Root cause: OpenCV's `SOLVEPNP_IPPE_SQUARE` (and the deprecated
+`estimatePoseSingleMarkers`) pair the detected corner order (TL, TR, BR, BL)
+with a **fixed canonical object-point order**:
+```
+[(-s/2, +s/2, 0), (+s/2, +s/2, 0), (+s/2, -s/2, 0), (-s/2, -s/2, 0)]
+```
+This defines the marker frame as X-right, Y-up, **Z out of the marker face**.
+Because OpenCV's camera frame is X-right, Y-**down**, Z-forward, a marker whose
+face points *at* the camera therefore has rotation `Rx(π)`, not identity. Using
+identity renders the *back* of the marker (mirrored image), which ArUco detects
+as a candidate but fails to decode.
+
+Fixes adopted: (a) use the canonical object points everywhere — both when
+rendering synthetic clips and when solving; (b) treat `Rx(π)` as the
+camera-facing baseline orientation in the synthetic generator. Round-trip error
+after the fix: **1.7–3.5 mm position, 0.05–3.4° orientation** over a sweep of
+tilts, which sets the achievable floor for the end-to-end tolerance.
+
 ## D0 — Environment / disk (2026-07-27)
 - Host: macOS, x86_64 conda Python 3.11.8. **Only ~2–3 GB free disk.** This
   dominates several choices below.
