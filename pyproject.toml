@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vid2traj"
+version = "0.1.0"
+description = "Convert RGB video of human manipulation into robot-executable LeRobot trajectory datasets"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.24,<2",
+    "scipy>=1.10",
+    "mujoco>=3.1",
+    "opencv-contrib-python-headless>=4.8",
+    "pyarrow>=14",
+    "pandas>=2.0",
+    "pyyaml>=6.0",
+    "av>=10",
+]
+
+[project.optional-dependencies]
+mediapipe = ["mediapipe>=0.10"]
+lerobot = ["lerobot"]
+dev = ["pytest>=7.4"]
+
+[project.scripts]
+vid2traj = "vid2traj.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+vid2traj = ["assets/models/**/*", "assets/models/**/**/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+markers = [
+    "mediapipe: requires the optional mediapipe frontend",
+    "lerobot: requires the optional lerobot package",
+    "slow: slow end-to-end test",
+]

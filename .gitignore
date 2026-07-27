@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+.venv/
+# generated outputs live in ../assets, but ignore any stray local ones
+/out/
+/scratch/
+.DS_Store
+# external clones (models are vendored into src/vid2traj/assets)
+/repos_external/
