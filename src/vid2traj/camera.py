@@ -24,7 +24,7 @@ class CameraModel:
         cls,
         width: int,
         height: int,
-        fov_deg: float = 55.0,
+        fov_deg: float = 46.0,
         T_cam_world: np.ndarray | None = None,
     ) -> CameraModel:
         focal = 0.5 * width / np.tan(np.radians(fov_deg) / 2.0)
@@ -46,7 +46,7 @@ class CameraModel:
         target,
         width: int = 960,
         height: int = 720,
-        fov_deg: float = 55.0,
+        fov_deg: float = 46.0,
         up=(0.0, 0.0, 1.0),
     ) -> CameraModel:
         """Place a camera at `eye` aimed at `target`, in OpenCV axes (x right, y down, z fwd)."""

@@ -9,7 +9,7 @@
     <rgba haze="0.09 0.10 0.13 1"/>
     <quality shadowsize="4096" offsamples="8"/>
     <map shadowclip="2.5"/>
-    <global azimuth="130" elevation="-22"/>
+    <global offwidth="1920" offheight="1440" azimuth="130" elevation="-22"/>
   </visual>
 
   <asset>

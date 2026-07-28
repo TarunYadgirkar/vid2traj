@@ -1,0 +1,505 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>vid2traj — retarget review</title>
+<style>
+:root{
+  --bench:#0A0C10;
+  --bench-2:#11141B;
+  --rule:#1F242E;
+  --vellum:#EFEDE7;
+  --ink:#14171E;
+  --graphite:#8A8F9A;
+  --graphite-dim:#565B66;
+  /* Colour is semantic here, never decorative: amber marks a frame the safety
+     pass had to touch, green marks a verified quantity. Nothing else is hued. */
+  --amber:#FFB629;
+  --verify:#5FBF8F;
+  --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  --display:"Helvetica Neue",Helvetica,Arial,system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bench);
+  color:var(--graphite);
+  font-family:var(--mono);
+  font-size:13px;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  padding:clamp(16px,3vw,40px);
+}
+.sheet{max-width:1240px;margin:0 auto}
+
+/* ---------- masthead ---------- */
+.masthead{
+  display:flex;align-items:flex-end;justify-content:space-between;
+  gap:24px;flex-wrap:wrap;
+  padding-bottom:18px;border-bottom:1px solid var(--rule);
+}
+.wordmark{
+  font-family:var(--display);
+  font-weight:800;
+  font-size:clamp(30px,5vw,46px);
+  letter-spacing:-.045em;
+  color:var(--vellum);
+  line-height:.95;
+}
+.wordmark span{color:var(--graphite-dim)}
+.tagline{margin-top:6px;color:var(--graphite);max-width:44ch}
+.specs{display:flex;gap:26px;flex-wrap:wrap;margin:0}
+.spec{display:flex;flex-direction:column;gap:2px}
+.spec dt{
+  font-size:10px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--graphite-dim);
+}
+.spec dd{margin:0;color:var(--vellum);font-variant-numeric:tabular-nums}
+
+/* ---------- light table ---------- */
+.stage{
+  display:grid;grid-template-columns:1fr 1fr;gap:14px;
+  margin:22px 0 0;
+}
+.panel{
+  margin:0;background:var(--vellum);border-radius:3px;overflow:hidden;
+  /* backlit: warm bloom under each slide on the bench */
+  box-shadow:0 0 0 1px #262B35, 0 18px 46px -22px rgba(239,237,231,.30);
+}
+.panel figcaption{
+  display:flex;align-items:baseline;justify-content:space-between;gap:12px;
+  padding:9px 12px;background:var(--vellum);color:var(--ink);
+  font-size:10px;letter-spacing:.16em;text-transform:uppercase;
+  border-bottom:1px solid rgba(20,23,30,.14);
+}
+.panel figcaption em{font-style:normal;color:rgba(20,23,30,.5);letter-spacing:.04em;text-transform:none}
+.panel video{display:block;width:100%;height:auto;aspect-ratio:4/3;object-fit:cover;background:#DAD8D2}
+
+/* ---------- transport ---------- */
+.transport{
+  display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+  margin-top:14px;padding:12px 14px;
+  background:var(--bench-2);border:1px solid var(--rule);border-radius:3px;
+}
+button{
+  font-family:var(--mono);font-size:12px;
+  background:transparent;color:var(--vellum);
+  border:1px solid var(--rule);border-radius:2px;
+  padding:6px 12px;cursor:pointer;
+  transition:border-color .15s,color .15s,background .15s;
+}
+button:hover{border-color:var(--graphite);background:#171B23}
+button:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+button[aria-pressed="true"]{color:var(--ink);background:var(--vellum);border-color:var(--vellum)}
+.play{min-width:84px}
+.counter{font-variant-numeric:tabular-nums;color:var(--vellum);letter-spacing:.04em}
+.counter b{font-weight:400}
+.counter span{color:var(--graphite-dim)}
+.rates{display:flex;gap:6px}
+.scrub{flex:1 1 220px;min-width:180px}
+input[type=range]{
+  -webkit-appearance:none;appearance:none;width:100%;height:20px;
+  background:transparent;cursor:pointer;
+}
+input[type=range]:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+input[type=range]::-webkit-slider-runnable-track{height:2px;background:var(--rule)}
+input[type=range]::-moz-range-track{height:2px;background:var(--rule)}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:3px;height:18px;background:var(--vellum);
+  border:0;border-radius:0;margin-top:-8px;
+}
+input[type=range]::-moz-range-thumb{width:3px;height:18px;background:var(--vellum);border:0;border-radius:0}
+
+/* ---------- signature: registration strip ---------- */
+.block{margin-top:26px}
+.block-head{
+  display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  padding-bottom:8px;border-bottom:1px solid var(--rule);
+}
+.block-head h2{
+  margin:0;font-family:var(--display);font-weight:700;font-size:13px;
+  letter-spacing:.18em;text-transform:uppercase;color:var(--vellum);
+}
+.block-head p{margin:0;color:var(--graphite-dim);max-width:56ch}
+.registration{
+  position:relative;margin-top:12px;
+  background:var(--bench-2);border:1px solid var(--rule);border-radius:3px;
+  padding:14px 14px 10px;
+}
+.registration canvas{display:block;width:100%;height:86px;cursor:crosshair}
+.legend{display:flex;gap:20px;flex-wrap:wrap;margin-top:10px;font-size:11px}
+.legend i{
+  display:inline-block;width:9px;height:9px;margin-right:7px;
+  vertical-align:middle;border-radius:1px;
+}
+.legend .k-ok i{background:#6C737F}
+.legend .k-gap i{background:#232833;box-shadow:inset 0 0 0 1px #333945}
+.legend .k-clamp i{background:rgba(138,143,154,.55)}
+.legend .k-hold i{background:var(--amber)}
+.readfield{
+  position:absolute;top:14px;right:14px;
+  font-size:11px;color:var(--graphite-dim);font-variant-numeric:tabular-nums;
+  text-align:right;pointer-events:none;
+}
+.readfield b{display:block;color:var(--vellum);font-weight:400}
+
+/* ---------- telemetry ---------- */
+.traces{margin-top:12px;border:1px solid var(--rule);border-radius:3px;background:var(--bench-2)}
+.trace{
+  display:grid;grid-template-columns:120px 1fr 96px;align-items:center;
+  gap:12px;padding:7px 14px;border-bottom:1px solid #171B22;
+}
+.trace:last-child{border-bottom:0}
+.trace-name{font-size:11px;color:var(--graphite);letter-spacing:.04em;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.trace canvas{display:block;width:100%;height:30px}
+.trace-val{font-size:11px;text-align:right;color:var(--vellum);font-variant-numeric:tabular-nums}
+.trace-val em{font-style:normal;color:var(--graphite-dim);font-size:10px}
+
+/* ---------- readout ---------- */
+.readout{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+  gap:1px;margin-top:26px;background:var(--rule);
+  border:1px solid var(--rule);border-radius:3px;overflow:hidden;
+}
+.stat{background:var(--bench-2);padding:14px 16px}
+.stat dt{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--graphite-dim)}
+.stat dd{
+  margin:6px 0 0;font-family:var(--display);font-weight:700;
+  font-size:26px;letter-spacing:-.03em;color:var(--vellum);
+  font-variant-numeric:tabular-nums;
+}
+.stat dd small{font-family:var(--mono);font-size:11px;font-weight:400;
+  letter-spacing:.04em;color:var(--graphite-dim);margin-left:5px}
+.stat.is-verified dd{color:var(--verify)}
+.stat.is-flagged dd{color:var(--amber)}
+.colophon{margin-top:22px;color:var(--graphite-dim);font-size:11px}
+
+@media (max-width:900px){
+  .stage{grid-template-columns:1fr}
+  .trace{grid-template-columns:96px 1fr;row-gap:4px}
+  .trace-val{grid-column:2;text-align:left}
+}
+@media (prefers-reduced-motion:reduce){
+  *{transition:none!important;animation:none!important}
+}
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <header class="masthead">
+    <div>
+      <div class="wordmark">vid2traj<span>/review</span></div>
+      <p class="tagline" id="tagline">Human demonstration on the left, the retargeted robot on the right, driven off one clock.</p>
+    </div>
+    <dl class="specs" id="specs"></dl>
+  </header>
+
+  <section class="stage">
+    <figure class="panel">
+      <figcaption>Source <em id="src-note">what the camera saw</em></figcaption>
+      <video id="v-source" src="__SOURCE_VIDEO__" muted playsinline preload="auto"></video>
+    </figure>
+    <figure class="panel">
+      <figcaption>Retargeted <em id="rob-note">in MuJoCo</em></figcaption>
+      <video id="v-robot" src="__ROBOT_VIDEO__" muted playsinline preload="auto"></video>
+    </figure>
+  </section>
+
+  <div class="transport">
+    <button class="play" id="play" aria-label="Play or pause">Play</button>
+    <button id="step-back" aria-label="Previous frame">&#9664;</button>
+    <button id="step-fwd" aria-label="Next frame">&#9654;</button>
+    <div class="counter"><b id="frame-no">0</b><span id="frame-total"></span></div>
+    <div class="rates" id="rates"></div>
+    <div class="scrub"><input type="range" id="scrub" min="0" value="0" step="1" aria-label="Scrub timeline"></div>
+  </div>
+
+  <section class="block">
+    <div class="block-head">
+      <h2>Registration</h2>
+      <p>One column per frame. The tall lane is tracking state; the short lane below it is how hard the rate limiter worked. Amber means a pose was rejected and the previous one held.</p>
+    </div>
+    <div class="registration">
+      <canvas id="strip"></canvas>
+      <div class="readfield" id="readfield"></div>
+      <div class="legend">
+        <span class="k-ok"><i></i>tracked</span>
+        <span class="k-gap"><i></i>no detection</span>
+        <span class="k-hold"><i></i>held — pose rejected</span>
+        <span class="k-clamp"><i></i>rate limiter effort (lower lane)</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="block-head">
+      <h2>Telemetry</h2>
+      <p>Each trace is scaled to the travel actually used. The gauge at the left of every lane shows where that travel sits inside the joint's full legal range.</p>
+    </div>
+    <div class="traces" id="traces"></div>
+  </section>
+
+  <dl class="readout" id="readout"></dl>
+  <p class="colophon" id="colophon"></p>
+</div>
+
+<script>
+const DATA = /*__PAYLOAD__*/null;
+
+const css = getComputedStyle(document.documentElement);
+const C = {
+  amber: css.getPropertyValue('--amber').trim(),
+  vellum: css.getPropertyValue('--vellum').trim(),
+  graphite: css.getPropertyValue('--graphite').trim(),
+  rule: css.getPropertyValue('--rule').trim(),
+};
+
+const source = document.getElementById('v-source');
+const robot  = document.getElementById('v-robot');
+const scrub  = document.getElementById('scrub');
+const playBtn= document.getElementById('play');
+const frameNo= document.getElementById('frame-no');
+const N = DATA.nFrames, FPS = DATA.fps;
+
+const flag = {
+  held: new Set(DATA.flags.held),
+  velocity: new Set(DATA.flags.velocity),
+  limit: new Set(DATA.flags.limit),
+  collision: new Set(DATA.flags.collision),
+  unobserved: new Set(DATA.flags.unobserved),
+};
+
+/* ---------- masthead ---------- */
+const seconds = (N / FPS).toFixed(2);
+document.getElementById('specs').innerHTML = [
+  ['embodiment', DATA.embodiment.name],
+  ['joints', DATA.embodiment.joints.length + ' + gripper'],
+  ['frames', N + ' @ ' + FPS + ' fps'],
+  ['duration', seconds + ' s'],
+].map(([k,v]) => `<div class="spec"><dt>${k}</dt><dd>${v}</dd></div>`).join('');
+document.getElementById('frame-total').textContent = ' / ' + (N - 1);
+document.getElementById('rob-note').textContent = DATA.embodiment.robotType + ' in MuJoCo';
+if (DATA.task) document.getElementById('src-note').textContent = DATA.task;
+scrub.max = N - 1;
+
+/* ---------- transport ---------- */
+let rate = 1;
+document.getElementById('rates').innerHTML = [0.5,1,2]
+  .map(r => `<button data-rate="${r}" aria-pressed="${r===1}">${r}&times;</button>`).join('');
+document.querySelectorAll('[data-rate]').forEach(b => b.addEventListener('click', () => {
+  rate = parseFloat(b.dataset.rate);
+  document.querySelectorAll('[data-rate]').forEach(o => o.setAttribute('aria-pressed', o === b));
+  source.playbackRate = robot.playbackRate = rate;
+}));
+
+const clamp = i => Math.max(0, Math.min(N - 1, i));
+const currentFrame = () => clamp(Math.round(source.currentTime * FPS));
+
+function seek(i){
+  i = clamp(i);
+  const t = i / FPS;
+  source.currentTime = t; robot.currentTime = t;
+  render(i);
+}
+function render(i){
+  frameNo.textContent = String(i).padStart(3,'0');
+  scrub.value = i;
+  drawStrip(i);
+  drawTraces(i);
+  readField(i);
+}
+playBtn.addEventListener('click', () => {
+  if (source.paused){ source.play(); robot.play(); playBtn.textContent = 'Pause'; }
+  else { source.pause(); robot.pause(); playBtn.textContent = 'Play'; }
+});
+document.getElementById('step-back').addEventListener('click', () => { source.pause(); robot.pause(); playBtn.textContent='Play'; seek(currentFrame()-1); });
+document.getElementById('step-fwd').addEventListener('click', () => { source.pause(); robot.pause(); playBtn.textContent='Play'; seek(currentFrame()+1); });
+scrub.addEventListener('input', () => { source.pause(); robot.pause(); playBtn.textContent='Play'; seek(parseInt(scrub.value,10)); });
+source.addEventListener('ended', () => { playBtn.textContent = 'Play'; });
+
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') return;
+  if (e.key === 'ArrowLeft'){ e.preventDefault(); source.pause(); robot.pause(); playBtn.textContent='Play'; seek(currentFrame()-1); }
+  if (e.key === 'ArrowRight'){ e.preventDefault(); source.pause(); robot.pause(); playBtn.textContent='Play'; seek(currentFrame()+1); }
+  if (e.key === ' '){ e.preventDefault(); playBtn.click(); }
+});
+
+/* keep the two players on one clock; correct drift rather than seeking each frame */
+function tick(){
+  if (!source.paused){
+    if (Math.abs(robot.currentTime - source.currentTime) > 0.06) robot.currentTime = source.currentTime;
+    render(currentFrame());
+  }
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+
+/* ---------- canvas helpers ---------- */
+function fit(canvas){
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = Math.max(1, Math.round(rect.width * dpr));
+  canvas.height = Math.max(1, Math.round(rect.height * dpr));
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  return {ctx, w: rect.width, h: rect.height};
+}
+
+/* ---------- signature: registration strip ---------- */
+const strip = document.getElementById('strip');
+/* Two lanes, because the two things being reported are not the same kind of
+   event. The tall lane is tracking state, which is discrete and worth an
+   alarm. The short lane under it is rate-limiter effort, which is continuous
+   and entirely routine — drawing it in amber made a healthy run look alarming. */
+function drawStrip(playhead){
+  const {ctx,w,h} = fit(strip);
+  ctx.clearRect(0,0,w,h);
+  const colW = w / N;
+  const barW = Math.max(1, colW - Math.min(1.2, colW * 0.28));
+  const stateTop = h*0.06, stateBot = h*0.62;
+  const assistBase = h*0.90, assistMax = h*0.24;
+
+  for (let i=0;i<N;i++){
+    const x = i * colW;
+
+    /* lane 1 — tracking state */
+    let colour = '#6C737F', top = stateTop + (stateBot-stateTop)*0.34;
+    if (flag.unobserved.has(i)){ colour = '#242935'; top = stateTop + (stateBot-stateTop)*0.62; }
+    if (flag.held.has(i) || flag.collision.has(i)){ colour = C.amber; top = stateTop; }
+    ctx.fillStyle = colour;
+    ctx.fillRect(x, top, barW, stateBot - top);
+
+    /* lane 2 — how hard the rate limiter worked, as a magnitude */
+    const m = Math.min(1, (DATA.clampMagnitude[i] || 0) * 6);
+    if (m > 0){
+      ctx.fillStyle = 'rgba(138,143,154,.55)';
+      ctx.fillRect(x, assistBase - m*assistMax, barW, m*assistMax);
+    }
+  }
+  ctx.fillStyle = C.rule; ctx.fillRect(0, assistBase, w, 1);
+
+  const px = playhead * colW;
+  ctx.fillStyle = C.vellum;
+  ctx.fillRect(px, 0, Math.max(1, barW), h*0.96);
+  ctx.beginPath(); ctx.moveTo(px-3.5, h); ctx.lineTo(px+3.5+barW-1, h); ctx.lineTo(px+barW/2-.5, h-5); ctx.closePath(); ctx.fill();
+}
+strip.addEventListener('click', e => {
+  const rect = strip.getBoundingClientRect();
+  source.pause(); robot.pause(); playBtn.textContent='Play';
+  seek(Math.floor((e.clientX - rect.left) / rect.width * N));
+});
+
+/* ---------- telemetry ---------- */
+const lanes = [];
+(function buildTraces(){
+  const host = document.getElementById('traces');
+  DATA.embodiment.joints.forEach((name, j) => {
+    const [lo, hi] = DATA.embodiment.limits[j];
+    lanes.push({name, lo, hi, unit:'rad', series: DATA.joints.map(r => r[j])});
+  });
+  lanes.push({
+    name:'gripper', lo:DATA.embodiment.gripperLimits[0], hi:DATA.embodiment.gripperLimits[1],
+    unit:'', series: DATA.gripper
+  });
+  host.innerHTML = lanes.map((l,i) =>
+    `<div class="trace"><div class="trace-name">${l.name}</div>
+     <canvas data-lane="${i}"></canvas>
+     <div class="trace-val" id="lv-${i}"></div></div>`).join('');
+  lanes.forEach((l,i) => l.canvas = host.querySelector(`[data-lane="${i}"]`));
+})();
+
+const GUTTER = 13;  /* left gutter holds the "where does this sit in the legal range" gauge */
+function drawTraces(playhead){
+  lanes.forEach((lane, i) => {
+    const {ctx,w,h} = fit(lane.canvas);
+    ctx.clearRect(0,0,w,h);
+    const plotX = GUTTER, plotW = Math.max(1, w - GUTTER);
+
+    /* Scale to the travel actually used, not the full legal range: a joint
+       moving 0.2 rad inside a 5.8 rad envelope is a flat line otherwise. The
+       gauge in the gutter keeps the legal context visible. */
+    let lo = Math.min(...lane.series), hi = Math.max(...lane.series);
+    const pad = Math.max((hi - lo) * 0.18, 1e-3);
+    lo -= pad; hi += pad;
+    const y = v => h - ((v - lo) / (hi - lo)) * h;
+
+    /* gutter gauge: full height is the legal range, the bright segment is used */
+    const legal = (lane.hi - lane.lo) || 1;
+    const gTop = h - ((hi - lane.lo) / legal) * h;
+    const gBot = h - ((lo - lane.lo) / legal) * h;
+    ctx.fillStyle = '#20252F'; ctx.fillRect(0, 0, 3, h);
+    ctx.fillStyle = '#6C737F';
+    ctx.fillRect(0, Math.max(0, gTop), 3, Math.min(h, gBot) - Math.max(0, gTop) || 1);
+
+    /* mark held frames behind the trace */
+    ctx.fillStyle = 'rgba(255,182,41,.85)';
+    flag.held.forEach(k => { if (k < N) ctx.fillRect(plotX + (k/(N-1||1))*plotW - .75, 0, 1.5, h); });
+
+    ctx.beginPath();
+    lane.series.forEach((v, k) => {
+      const x = plotX + (k / (N - 1 || 1)) * plotW;
+      k ? ctx.lineTo(x, y(v)) : ctx.moveTo(x, y(v));
+    });
+    ctx.strokeStyle = C.graphite; ctx.lineWidth = 1.25; ctx.stroke();
+
+    const px = plotX + (playhead / (N - 1 || 1)) * plotW;
+    ctx.fillStyle = C.vellum; ctx.fillRect(px - .5, 0, 1, h);
+    const v = lane.series[playhead];
+    ctx.beginPath(); ctx.arc(px, y(v), 2.4, 0, Math.PI*2); ctx.fill();
+
+    const usage = ((Math.max(...lane.series) - Math.min(...lane.series)) / legal) * 100;
+    document.getElementById('lv-'+i).innerHTML =
+      v.toFixed(3) + (lane.unit ? ` <em>${lane.unit}</em>` : '') +
+      `<em style="display:block">${usage.toFixed(1)}% of travel</em>`;
+  });
+}
+
+function readField(i){
+  const notes = [];
+  if (flag.unobserved.has(i)) notes.push('no detection');
+  if (flag.limit.has(i)) notes.push('limit clamped');
+  if (flag.velocity.has(i)) notes.push('velocity clamped');
+  if (flag.held.has(i)) notes.push('held');
+  const p = DATA.eePositions[i];
+  document.getElementById('readfield').innerHTML =
+    `<b>ee &nbsp;${p.map(c => c.toFixed(3)).join('  ')}</b>` +
+    (notes.length ? notes.join(' &middot; ') : 'nominal');
+}
+
+/* ---------- readout ---------- */
+(function readout(){
+  const cards = [];
+  if (DATA.accuracy){
+    cards.push(['ee tracking error', DATA.accuracy.rmse_mm.toFixed(1), 'mm rmse',
+                DATA.accuracy.rmse_mm < 20 ? 'is-verified' : 'is-flagged']);
+    cards.push(['worst frame', DATA.accuracy.max_mm.toFixed(1), 'mm', '']);
+  }
+  const obs = Math.round(DATA.observedFraction * 100);
+  cards.push(['frames observed', obs, '%', obs === 100 ? 'is-verified' : 'is-flagged']);
+  cards.push(['frames held', flag.held.size, flag.held.size === 1 ? 'frame' : 'frames',
+              flag.held.size ? 'is-flagged' : 'is-verified']);
+  const peak = Math.max(...DATA.peakVelocity);
+  const lim  = Math.min(...DATA.embodiment.velocityLimits);
+  cards.push(['peak joint rate', peak.toFixed(2), 'of ' + lim.toFixed(2) + ' rad/s',
+              peak <= lim ? 'is-verified' : 'is-flagged']);
+
+  document.getElementById('readout').innerHTML = cards.map(([k,v,u,cls]) =>
+    `<div class="stat ${cls}"><dt>${k}</dt><dd>${v}<small>${u}</small></dd></div>`).join('');
+
+  document.getElementById('colophon').textContent =
+    `Every frame above satisfies the joint limits, velocity and acceleration limits, and ` +
+    `self-collision checks for ${DATA.embodiment.name}. Where it could not, the pose was held ` +
+    `and marked in amber rather than emitted.`;
+})();
+
+/* ---------- boot ---------- */
+function boot(){ render(0); }
+if (source.readyState >= 1) boot();
+else source.addEventListener('loadedmetadata', boot);
+window.addEventListener('resize', () => render(currentFrame()));
+</script>
+</body>
+</html>

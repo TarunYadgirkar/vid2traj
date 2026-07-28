@@ -93,6 +93,7 @@ class SafetyChecker:
 
         out = np.zeros_like(candidates)
         report = SafetyReport(n_frames=n_frames)
+        report.velocity_clamp_magnitude = [0.0] * n_frames
 
         previous = None
         velocity = np.zeros(candidates.shape[1])
@@ -119,6 +120,9 @@ class SafetyChecker:
             limited = np.clip(desired, v_low, v_high)
             if not np.allclose(limited, desired, atol=1e-12):
                 report.velocity_clamped_frames.append(i)
+                report.velocity_clamp_magnitude[i] = float(
+                    np.max(np.abs(limited - desired) / np.maximum(v_max, 1e-9))
+                )
 
             accepted = np.clip(previous + limited * dt, low, high)
 

@@ -94,6 +94,10 @@ class SafetyReport:
     collision_frames: list[int] = field(default_factory=list)
     unreachable_frames: list[int] = field(default_factory=list)
     observed_fraction: float = 1.0
+    # How hard the rate limiter had to work per frame, as a fraction of the
+    # joint's own velocity limit. Clamping is routine and continuous, so it is
+    # reported as a magnitude rather than a binary alarm.
+    velocity_clamp_magnitude: list[float] = field(default_factory=list)
 
     def summary(self) -> str:
         return (
