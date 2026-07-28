@@ -11,7 +11,8 @@ Every external thing added to the machine for this project, what it is, why.
 | `pyarrow` | Parquet writing for the LeRobot dataset | also a lerobot dep |
 | `pandas` | tabular assembly before Parquet | also a lerobot dep |
 | `pyyaml` | embodiment config loading | usually already present |
-| `lerobot` | acceptance test: dataset must load + iterate under the real library | heaviest; reuses installed torch |
+| `lerobot` 0.4.4 | acceptance test: dataset must load + iterate under the real library | **installed with `--no-deps`** — see note below |
+| `datasets`, `huggingface_hub`, `accelerate`, `jsonlines`, `deepdiff` | lerobot's actual runtime imports for dataset loading | pulled explicitly since `--no-deps` skipped them |
 | `mediapipe` | optional real-video hand-pose frontend (see DECISIONS D1) | import-guarded; not required by the core test suite |
 
 Already present (not installed by us): `torch` 2.2.2, `numpy` 1.26.4, `scipy`
@@ -31,3 +32,19 @@ can be discarded.
 ## System tools (pre-existing)
 
 `ffmpeg` 8.1.2 (bit-exact MP4 encode), `git`, `gh` (authenticated).
+
+
+## Note: why `lerobot` is installed with `--no-deps`
+
+`pip install lerobot` on this machine resolves to the abandoned 0.1.0 placeholder,
+because every 0.3+ release requires `torchvision>=0.21`, which requires
+`torch>=2.6` — and PyTorch stopped publishing **x86_64 macOS** wheels after
+2.2.2 (max torchvision here is 0.17.2). The dependency is genuinely
+unsatisfiable on Intel Macs, not a resolver quirk.
+
+Since only the *dataset reader* is needed (not training, not `torchvision`'s
+video decoding), lerobot 0.4.4 was installed with `--no-deps` plus the modules
+its dataset path actually imports. The acceptance test then loads and iterates
+the exported dataset with that real library, video decoding included (it falls
+back from `torchcodec` to `pyav`, which is installed). This is a host
+limitation, not a compromise in what the test verifies.
