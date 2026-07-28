@@ -2,6 +2,33 @@
 
 Running log of non-obvious choices made autonomously. Newest first.
 
+## D11 — Site and review page share one visual system (2026-07-27)
+Both are built on the same tokens: a dark "bench", vellum media panels, a
+monospace-dominant type system, and a strict rule that **colour is semantic** —
+amber only where the safety pass intervened, green only for a verified
+quantity. Nothing is hued for decoration. Two consequences worth keeping:
+- The first draft coloured every velocity-clamped frame amber. 36 of 90 frames
+  are clamped on a perfectly healthy run, so the page screamed at the reader
+  about routine rate limiting. Clamping is now reported as a *magnitude* in a
+  separate quiet lane; amber is reserved for held frames.
+- The first draft scaled each telemetry lane to the joint's full legal range,
+  which was principled but rendered every trace as a flat line (0.2 rad of
+  motion inside a 5.8 rad envelope). Lanes now autoscale to the travel actually
+  used, with a gutter gauge showing where that sits in the legal range.
+
+The landing page's headline numbers are read from `stats.json`, which
+`scripts/build_site.py` writes from a real pipeline run, so the marketing
+numbers cannot drift from the code.
+
+## D10 — MuJoCo offscreen rendering does work here (2026-07-27)
+D2 assumed headless GL would be unreliable on macOS and avoided it. Tested
+directly: `mujoco.Renderer` works on this machine. The visualization therefore
+uses real rendered robot video rather than a wireframe. The synthetic
+ground-truth generator still deliberately avoids GL (pure OpenCV), because
+ground truth must reproduce anywhere, including on a machine where GL is absent.
+Note the default offscreen framebuffer is 640x480; rendering larger needs
+`<global offwidth= offheight=>` in the scene XML.
+
 ## D9 — Test correction: how a safety violation is probed (2026-07-27)
 The original `test_violations_hold_the_previous_valid_pose` fed the checker
 `[home, home, bad, home]`, where `bad` was a distant self-colliding pose, and
