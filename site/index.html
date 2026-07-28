@@ -1,0 +1,459 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>vid2traj — video of a hand becomes a robot trajectory</title>
+<meta name="description" content="vid2traj converts ordinary RGB video of a person doing a manipulation task into a safety-checked, robot-executable LeRobot trajectory dataset.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230A0C10'/><rect x='7' y='7' width='18' height='18' fill='%23EFEDE7'/><rect x='11' y='11' width='5' height='5' fill='%230A0C10'/><rect x='18' y='16' width='5' height='6' fill='%230A0C10'/></svg>">
+<style>
+:root{
+  --bench:#0A0C10;
+  --bench-2:#11141B;
+  --rule:#1F242E;
+  --vellum:#EFEDE7;
+  --ink:#14171E;
+  --graphite:#8A8F9A;
+  --graphite-dim:#565B66;
+  --amber:#FFB629;
+  --verify:#5FBF8F;
+  --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  --display:"Helvetica Neue",Helvetica,Arial,system-ui,sans-serif;
+  --gutter:clamp(18px,5vw,64px);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--bench);color:var(--graphite);
+  font-family:var(--mono);font-size:14px;line-height:1.65;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1180px;margin:0 auto;padding:0 var(--gutter)}
+a{color:var(--vellum);text-decoration:none;border-bottom:1px solid var(--rule)}
+a:hover{border-bottom-color:var(--amber)}
+a:focus-visible,button:focus-visible{outline:2px solid var(--amber);outline-offset:3px}
+h1,h2,h3{font-family:var(--display);color:var(--vellum);margin:0}
+.eyebrow{
+  font-size:10px;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--graphite-dim);margin:0 0 14px;
+}
+
+/* ---------- nav ---------- */
+nav{
+  position:sticky;top:0;z-index:20;background:rgba(10,12,16,.86);
+  backdrop-filter:blur(10px);border-bottom:1px solid var(--rule);
+}
+nav .wrap{display:flex;align-items:center;justify-content:space-between;height:56px;gap:20px}
+.brand{font-family:var(--display);font-weight:800;font-size:18px;letter-spacing:-.04em;color:var(--vellum)}
+.navlinks{display:flex;gap:22px;font-size:12px}
+.navlinks a{border:0;color:var(--graphite)}
+.navlinks a:hover{color:var(--vellum)}
+@media (max-width:720px){.navlinks a:not(.cta){display:none}}
+
+/* ---------- hero ---------- */
+.hero{padding:clamp(56px,10vh,110px) 0 0}
+.hero h1{
+  font-weight:800;letter-spacing:-.045em;line-height:.97;
+  font-size:clamp(38px,7.6vw,86px);max-width:15ch;
+}
+.hero h1 em{font-style:normal;color:var(--graphite-dim)}
+.hero .lede{margin:22px 0 0;max-width:62ch;font-size:15px;color:var(--graphite)}
+.hero .lede b{color:var(--vellum);font-weight:400}
+
+/* the paired players are the thesis: same motion, two bodies */
+.pair{
+  display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:40px;
+}
+.slide{
+  position:relative;background:var(--vellum);border-radius:3px;overflow:hidden;
+  box-shadow:0 0 0 1px #262B35, 0 24px 60px -30px rgba(239,237,231,.34);
+}
+.slide video{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;background:#D8D6D0}
+.slide span{
+  position:absolute;left:0;top:0;padding:6px 10px;
+  background:var(--vellum);color:var(--ink);
+  font-size:10px;letter-spacing:.16em;text-transform:uppercase;
+}
+.pairnote{
+  display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  margin-top:12px;font-size:11px;color:var(--graphite-dim);
+}
+
+/* ---------- spec band ---------- */
+.band{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+  gap:1px;background:var(--rule);border:1px solid var(--rule);
+  border-radius:3px;overflow:hidden;margin-top:56px;
+}
+.cell{background:var(--bench-2);padding:18px 20px}
+.cell dt{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--graphite-dim)}
+.cell dd{
+  margin:8px 0 0;font-family:var(--display);font-weight:700;font-size:clamp(24px,3vw,32px);
+  letter-spacing:-.035em;color:var(--vellum);font-variant-numeric:tabular-nums;
+}
+.cell dd small{font-family:var(--mono);font-size:11px;font-weight:400;letter-spacing:.05em;color:var(--graphite-dim);margin-left:6px}
+.cell.good dd{color:var(--verify)}
+
+/* ---------- sections ---------- */
+section{padding:clamp(64px,11vh,120px) 0 0}
+.sechead{max-width:64ch}
+.sechead h2{font-weight:700;font-size:clamp(24px,3.4vw,38px);letter-spacing:-.035em;line-height:1.1}
+.sechead p{margin:16px 0 0;font-size:15px}
+.prose{max-width:64ch}
+.prose p{margin:16px 0 0}
+.prose b{color:var(--vellum);font-weight:400}
+
+/* ---------- pipeline: an ordered sequence, so it is numbered ---------- */
+.stages{margin-top:44px;border-top:1px solid var(--rule)}
+.stage{
+  display:grid;grid-template-columns:52px 1fr 300px;gap:28px;align-items:start;
+  padding:30px 0;border-bottom:1px solid var(--rule);
+}
+.stage-n{
+  font-family:var(--display);font-weight:700;font-size:13px;color:var(--graphite-dim);
+  letter-spacing:.06em;padding-top:3px;
+}
+.stage h3{font-size:17px;font-weight:700;letter-spacing:-.02em}
+.stage p{margin:8px 0 0;max-width:52ch}
+.stage figure{margin:0;border-radius:3px;overflow:hidden;background:var(--bench-2);border:1px solid var(--rule)}
+.stage figure img{display:block;width:100%;height:auto}
+.stage figure figcaption{
+  padding:7px 10px;font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--graphite-dim);border-top:1px solid var(--rule);
+}
+.stage .noart{
+  font-size:11px;color:var(--graphite-dim);border:1px dashed var(--rule);
+  border-radius:3px;padding:14px;
+}
+.stage .noart code{color:var(--vellum);display:block;white-space:pre;overflow-x:auto;font-size:11px;line-height:1.7}
+@media (max-width:900px){
+  .stage{grid-template-columns:38px 1fr;gap:16px}
+  .stage figure,.stage .noart{grid-column:2}
+  .pair{grid-template-columns:1fr}
+}
+
+/* ---------- safety callout ---------- */
+.rule-card{
+  margin-top:36px;border:1px solid var(--rule);border-left:2px solid var(--amber);
+  border-radius:3px;background:var(--bench-2);padding:22px 24px;max-width:74ch;
+}
+.rule-card h3{font-size:15px;font-weight:700;letter-spacing:-.01em;margin-bottom:8px}
+.rule-card code{color:var(--amber)}
+
+/* ---------- embodiment table ---------- */
+.tbl{width:100%;border-collapse:collapse;margin-top:32px;font-size:13px}
+.tbl th,.tbl td{text-align:left;padding:13px 14px;border-bottom:1px solid var(--rule)}
+.tbl th{
+  font-family:var(--mono);font-weight:400;font-size:10px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--graphite-dim);border-bottom-color:var(--graphite-dim);
+}
+.tbl td:first-child{color:var(--vellum)}
+.tbl tr:last-child td{border-bottom:0}
+
+/* ---------- code ---------- */
+pre{
+  margin:24px 0 0;background:var(--bench-2);border:1px solid var(--rule);
+  border-radius:3px;padding:18px 20px;overflow-x:auto;font-size:12.5px;line-height:1.8;
+  color:var(--vellum);
+}
+pre .c{color:var(--graphite-dim)}
+pre .f{color:var(--amber)}
+
+footer{
+  margin-top:clamp(72px,12vh,130px);border-top:1px solid var(--rule);
+  padding:30px 0 60px;font-size:11px;color:var(--graphite-dim);
+}
+footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
+
+/* ---------- motion: one device, used consistently ---------- */
+.js .rise{opacity:0;transform:translateY(14px);transition:opacity .6s ease,transform .6s ease}
+.js .rise.in{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .js .rise{opacity:1;transform:none;transition:none}
+}
+</style>
+</head>
+<body>
+<script>document.documentElement.classList.add('js')</script>
+
+<nav>
+  <div class="wrap">
+    <span class="brand">vid2traj</span>
+    <div class="navlinks">
+      <a href="#what">What it is</a>
+      <a href="#how">How it works</a>
+      <a href="#proof">Proof</a>
+      <a href="#robots">Robots</a>
+      <a class="cta" href="review.html">Open a review &rarr;</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <p class="eyebrow">Demonstration capture without a teleop rig</p>
+    <h1>Video of a hand in, <em>a robot trajectory out.</em></h1>
+    <p class="lede">
+      vid2traj takes ordinary RGB video &mdash; a phone, a webcam, no depth sensor &mdash;
+      and produces a joint-space trajectory a specific robot can actually execute:
+      <b>inside its joint limits, inside its velocity and acceleration limits, and free of
+      self-collision on every single frame.</b> It exports as a LeRobotDataset.
+    </p>
+
+    <div class="pair rise">
+      <div class="slide">
+        <video src="media/hero_source.mp4" autoplay muted loop playsinline></video>
+        <span>Recorded</span>
+      </div>
+      <div class="slide">
+        <video src="media/robot.mp4" autoplay muted loop playsinline></video>
+        <span>Retargeted</span>
+      </div>
+    </div>
+    <p class="pairnote">
+      <span>Franka Panda &middot; 90 frames @ 30 fps &middot; the two clips are the same motion, not a re-enactment</span>
+      <span><a href="review.html">Open the frame-by-frame review &rarr;</a></span>
+    </p>
+
+    <dl class="band rise" id="band"></dl>
+  </div>
+</header>
+
+<section id="what">
+  <div class="wrap">
+    <div class="sechead rise">
+      <p class="eyebrow">What it is</p>
+      <h2>Robots learn from demonstrations. Collecting them is the bottleneck.</h2>
+      <p>
+        Imitation learning needs hours of demonstration data. Today that usually means a
+        teleoperation rig: an operator, a leader arm, a follower arm, and a lab. It is slow,
+        it does not parallelize, and it needs the robot before you have the data.
+      </p>
+    </div>
+    <div class="prose rise">
+      <p>
+        Video of people doing tasks with their hands is, by comparison, everywhere and free.
+        The gap is that a video is not a trajectory. It has no joint angles, no metric scale,
+        no notion of what a particular arm can physically reach, and no guarantee that
+        anything in it is safe to execute.
+      </p>
+      <p>
+        vid2traj closes that gap end to end: it estimates the wrist pose per frame, lifts it
+        into a world frame, smooths it, solves inverse kinematics against a real robot model,
+        and then <b>refuses to emit any pose the robot could not safely hold</b>. What comes
+        out the far side loads directly into the LeRobot training stack.
+      </p>
+      <p>
+        It is a research tool and it is honest about its limits. Absolute metric scale from a
+        single un-instrumented camera is an open problem; the marker frontend sidesteps it,
+        the hand frontend approximates it. Nothing here models contact forces.
+      </p>
+    </div>
+  </div>
+</section>
+
+<section id="how">
+  <div class="wrap">
+    <div class="sechead rise">
+      <p class="eyebrow">How it works</p>
+      <h2>Six stages. Every artifact below came out of an actual run.</h2>
+      <p>These are ordered steps, each one consuming the last one's output.</p>
+    </div>
+
+    <div class="stages">
+      <article class="stage rise">
+        <div class="stage-n">01</div>
+        <div>
+          <h3>Read the video</h3>
+          <p>Frames go in one at a time. No depth channel is assumed and no calibration
+             target is required beyond the camera intrinsics.</p>
+        </div>
+        <figure><img src="media/stage-source.jpg" alt="A raw frame from the source video" loading="lazy" width="556" height="556">
+          <figcaption>frame 45, as recorded</figcaption></figure>
+      </article>
+
+      <article class="stage rise">
+        <div class="stage-n">02</div>
+        <div>
+          <h3>Estimate the wrist pose</h3>
+          <p>Two interchangeable frontends behind one interface. <b>MediaPipe Hands</b> for
+             bare hands &mdash; maintained, CPU-real-time, tiny. <b>An ArUco marker</b> when
+             you want a metric, deterministic, learning-free reading. A frame with no
+             confident detection returns nothing rather than a guess.</p>
+        </div>
+        <figure><img src="media/stage-detect.jpg" alt="The same frame with the detected marker corners and pose axes drawn" loading="lazy" width="556" height="556">
+          <figcaption>detected corners &rarr; 6-DOF pose</figcaption></figure>
+      </article>
+
+      <article class="stage rise">
+        <div class="stage-n">03</div>
+        <div>
+          <h3>Lift to the world, then smooth</h3>
+          <p>The camera extrinsic puts every pose in one fixed frame. Short dropouts are
+             interpolated; long ones are left flagged rather than invented, because a
+             confident line through a gap you never observed is a lie.</p>
+        </div>
+        <figure><img src="media/stage-world.jpg" alt="Top-down plot of the recovered end-effector path" loading="lazy" width="720" height="540">
+          <figcaption>recovered path, world frame</figcaption></figure>
+      </article>
+
+      <article class="stage rise">
+        <div class="stage-n">04</div>
+        <div>
+          <h3>Retarget onto the robot</h3>
+          <p>A fixed wrist-to-end-effector offset from the robot's config turns the human
+             pose into a target pose, then damped least-squares IK on MuJoCo's analytic
+             Jacobian solves for joint angles. Redundant arms get a null-space pull toward
+             the home pose so the elbow stays put instead of wandering between solutions.</p>
+        </div>
+        <figure><img src="media/stage-robot.jpg" alt="The Franka Panda at the retargeted pose" loading="lazy" width="960" height="720">
+          <figcaption>the same instant, on the robot</figcaption></figure>
+      </article>
+
+      <article class="stage rise">
+        <div class="stage-n">05</div>
+        <div>
+          <h3>Refuse anything unsafe</h3>
+          <p>Every candidate is clamped into the joint limits, rate-limited so no velocity or
+             acceleration limit breaks, and checked for self-collision in MuJoCo. If a pose
+             still fails, the previous valid one is held and the frame is recorded as held.</p>
+        </div>
+        <div class="noart">The order matters. Rate-limiting <em>before</em> the collision check is
+          what lets the arm refuse a bad pose without producing an acceleration spike as it stops.</div>
+      </article>
+
+      <article class="stage rise">
+        <div class="stage-n">06</div>
+        <div>
+          <h3>Export as a LeRobotDataset</h3>
+          <p>Parquet plus MP4 in the v3.0 layout, with the metadata the real loader expects.
+             Byte-identical across runs on the same input.</p>
+        </div>
+        <div class="noart"><code>meta/info.json
+meta/tasks.parquet
+meta/episodes/chunk-000/…
+data/chunk-000/file-000.parquet
+videos/observation.images.side/…</code></div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section id="proof">
+  <div class="wrap">
+    <div class="sechead rise">
+      <p class="eyebrow">Proof</p>
+      <h2>The claim is testable, so it is tested.</h2>
+      <p>
+        The core regression generates a known joint trajectory, renders it to video, runs the
+        whole pipeline on that render, and compares the recovered end-effector pose against
+        the trajectory it started from. Nothing is mocked in between.
+      </p>
+    </div>
+
+    <table class="tbl rise">
+      <thead><tr><th>What is checked</th><th>How</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Round-trip accuracy</td><td>synthetic ground truth through the full pipeline</td><td id="t-rmse">&mdash;</td></tr>
+        <tr><td>Joint limits and self-collision</td><td>every emitted frame re-checked in MuJoCo</td><td>every frame passes</td></tr>
+        <tr><td>Velocity and acceleration</td><td>finite differences against the robot's datasheet limits</td><td>no frame exceeds</td></tr>
+        <tr><td>LeRobot compatibility</td><td>loaded and iterated with the real <code>lerobot</code> package</td><td>loads, iterates fully</td></tr>
+        <tr><td>Determinism</td><td>two runs, SHA-256 of the Parquet and MP4</td><td>byte-identical</td></tr>
+        <tr><td>Degradation</td><td>occlusion, subject leaving frame, two people</td><td>no crash, no unsafe frame</td></tr>
+      </tbody>
+    </table>
+
+    <div class="rule-card rise">
+      <h3>What happens when it cannot solve a frame</h3>
+      <p>It holds the last pose it trusts, and says so. A held frame is marked in the review
+         page in amber and counted in the safety report. The failure mode is a robot that
+         pauses, not a robot that lunges. That is the only behaviour a demonstration dataset
+         is allowed to have.</p>
+    </div>
+  </div>
+</section>
+
+<section id="robots">
+  <div class="wrap">
+    <div class="sechead rise">
+      <p class="eyebrow">Robots</p>
+      <h2>A second robot is a config file, not a code change.</h2>
+      <p>
+        Nothing in the retargeting, safety, or export layers branches on which robot it is
+        driving. The model path, joint set, limits, home pose, wrist offset, gripper mapping
+        and IK gains all live in YAML.
+      </p>
+    </div>
+    <table class="tbl rise">
+      <thead><tr><th>Robot</th><th>Arm joints</th><th>Task-space</th><th>Added by</th></tr></thead>
+      <tbody>
+        <tr><td>Franka Panda</td><td>7 + parallel gripper</td><td>full 6-DOF, 1 redundant</td><td>—</td></tr>
+        <tr><td>SO-101</td><td>5 + jaw</td><td>position, orientation relaxed</td><td>one YAML file</td></tr>
+      </tbody>
+    </table>
+    <div class="prose rise">
+      <p>
+        SO-101 is deliberately the harder case: five joints cannot reach an arbitrary
+        six-DOF pose, so its config declares orientation a soft preference and convergence is
+        judged on position. That is a flag in the file, not a fork in the code.
+      </p>
+    </div>
+  </div>
+</section>
+
+<section id="start">
+  <div class="wrap">
+    <div class="sechead rise">
+      <p class="eyebrow">Get started</p>
+      <h2>Run it</h2>
+    </div>
+<pre class="rise"><span class="c"># install</span>
+pip install -e .
+
+<span class="c"># make a synthetic clip with known ground truth</span>
+vid2traj synth --out demo/
+
+<span class="c"># convert a video into a LeRobot dataset</span>
+vid2traj convert demo/clip.mp4 <span class="f">--embodiment</span> franka_panda \
+                 <span class="f">--camera</span> demo/camera.json <span class="f">--out</span> demo/dataset
+
+<span class="c"># build the side-by-side review page</span>
+vid2traj viz demo/dataset <span class="f">--video</span> demo/clip.mp4 <span class="f">--out</span> review.html</pre>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>vid2traj &mdash; research tool. Franka Panda and SO-ARM100 models from MuJoCo Menagerie (Apache-2.0).</span>
+    <span><a href="review.html">Frame-by-frame review</a></span>
+  </div>
+</footer>
+
+<script>
+/* Headline numbers come from stats.json, which the build script writes from a
+   real pipeline run — so the page cannot quietly disagree with the code. */
+fetch('stats.json').then(r => r.json()).then(s => {
+  document.getElementById('band').innerHTML = [
+    ['tracking error', s.rmseMm, 'mm rmse', true],
+    ['worst frame', s.maxMm, 'mm', false],
+    ['frames held', s.held, s.held === 1 ? 'frame' : 'frames', s.held === 0],
+    ['self-collisions', s.collisions, 'frames', s.collisions === 0],
+    ['arm joints solved', s.joints, 'per frame', false],
+  ].map(([k, v, u, good]) =>
+    `<div class="cell${good ? ' good' : ''}"><dt>${k}</dt><dd>${v}<small>${u}</small></dd></div>`
+  ).join('');
+  document.getElementById('t-rmse').textContent =
+    s.rmseMm + ' mm RMSE, ' + s.maxMm + ' mm worst frame';
+}).catch(() => {});
+
+const io = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } });
+}, {rootMargin: '0px 0px -8% 0px'});
+document.querySelectorAll('.rise').forEach((el, i) => {
+  el.style.transitionDelay = Math.min(i % 4, 3) * 60 + 'ms';
+  io.observe(el);
+});
+</script>
+</body>
+</html>

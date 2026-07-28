@@ -1,0 +1,10 @@
+{
+  "rmseMm": 1.73,
+  "maxMm": 4.78,
+  "frames": 90,
+  "fps": 30.0,
+  "held": 0,
+  "collisions": 0,
+  "observedPct": 100,
+  "joints": 7
+}
