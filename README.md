@@ -134,9 +134,9 @@ physics cannot disagree. Ships with `franka_panda` (7 joints) and `so101`
 pytest
 ```
 
-33 acceptance tests, written from [SPEC.md](SPEC.md) before the implementation.
-29 run out of the box; the 4 `lerobot` compatibility tests skip unless the
-optional package is installed.
+56 tests. The 33 acceptance tests were written from [SPEC.md](SPEC.md) before the
+implementation; the rest pin the math and the CLI contract. 52 run out of the box;
+the 4 `lerobot` compatibility tests skip unless the optional package is installed.
 
 - **Synthetic round-trip** — known joint trajectory → render → full pipeline →
   compare recovered EE pose. The core regression.
@@ -148,6 +148,11 @@ optional package is installed.
 - **Determinism** — two runs, SHA-256 of the Parquet and MP4 must match.
 - **Degradation** — occlusion, subject leaving frame, two people, blank video.
 - **Embodiments** — a third robot defined at runtime from YAML alone.
+- **Math invariants** — the analytic site Jacobian differenced numerically against
+  forward kinematics on both embodiments, plus algebraic identities for the
+  transform, quaternion-hemisphere, and SLERP-gap helpers the IK loop rides on.
+- **CLI** — a wrong embodiment name, a missing video, or camera intrinsics that
+  disagree with the clip's resolution exits 2 with a readable message, not a traceback.
 
 Regenerate the committed fixture clips and the site assets:
 
