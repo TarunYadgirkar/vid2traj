@@ -1,6 +1,6 @@
 # Decisions
 
-Running log of non-obvious choices made autonomously. Newest first.
+Running log of non-obvious choices and why they were made. Newest first.
 
 ## D11 — Site and review page share one visual system (2026-07-27)
 Both are built on the same tokens: a dark "bench", vellum media panels, a

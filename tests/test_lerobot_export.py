@@ -16,6 +16,8 @@ from vid2traj import run_pipeline
 
 pytestmark = pytest.mark.lerobot
 
+pytest.importorskip("lerobot", reason="optional `lerobot` extra is not installed")
+
 
 def _load_lerobot_dataset(root):
     """Import LeRobotDataset across the versions that moved the module."""

@@ -1,7 +1,7 @@
 # vid2traj
 
-Convert ordinary RGB video of a person doing a manipulation task into a
-robot-executable trajectory dataset.
+Convert ordinary RGB video of a manipulation task into a robot-executable
+trajectory dataset.
 
 Video in (phone or webcam, no depth) → per-frame wrist pose → world-frame
 trajectory → temporal smoothing → IK retargeting onto a specific robot →
@@ -9,39 +9,23 @@ safety pass → a `LeRobotDataset` you can train on.
 
 **Live explainer + demo:** https://vid2traj.vercel.app
 
-On the bundled synthetic regression clip, the recovered end-effector pose
-tracks the ground-truth trajectory to **1.7 mm RMSE / ~2° orientation**, with
-every emitted frame inside the Franka Panda's joint, velocity, and acceleration
-limits and free of self-collision.
+| raw frame | marker pose | world path | retargeted |
+|---|---|---|---|
+| ![A raw frame from the source video](site/media/stage-source.jpg) | ![The same frame with detected marker corners and pose axes](site/media/stage-detect.jpg) | ![Top-down plot of the recovered end-effector path](site/media/stage-world.jpg) | ![The Franka Panda at the retargeted pose](site/media/stage-robot.jpg) |
 
----
+On the bundled synthetic marker clip (90 frames, Franka Panda), the recovered
+end-effector position tracks the ground-truth trajectory to **1.7 mm RMSE,
+4.8 mm worst frame**, with every emitted frame inside the robot's joint,
+velocity, and acceleration limits and free of self-collision. Orientation is
+held under a 5° RMSE bound by the same regression test.
 
-## Install
+## Quick start
 
 Needs Python ≥3.10 and `ffmpeg` on `PATH`.
 
 ```bash
 pip install -e .
 ```
-
-Optional extras:
-
-```bash
-pip install -e ".[mediapipe]"   # bare-hand frontend
-pip install -e ".[dev]"         # pytest
-```
-
-The `lerobot` compatibility test needs the real library. On x86_64 macOS its
-`torchvision>=0.21` pin is unsatisfiable, so install the reader only:
-
-```bash
-pip install --no-deps "lerobot==0.4.4"
-pip install datasets huggingface_hub accelerate jsonlines deepdiff
-```
-
-See [DEPENDENCIES.md](DEPENDENCIES.md) for why.
-
-## Quick start
 
 Generate a synthetic clip with known ground truth, convert it, and review it:
 
@@ -60,6 +44,20 @@ vid2traj viz demo/dataset --video demo/clip.mp4 --out review.html
 `review.html` is a single self-contained file: the source video beside the
 retargeted robot in sim, driven off one clock, with a per-frame registration
 strip and joint telemetry. Open it directly — no server needed.
+
+## Install notes
+
+Optional extras:
+
+```bash
+pip install -e ".[mediapipe]"   # bare-hand frontend
+pip install -e ".[dev]"         # pytest
+```
+
+The `numpy<2` pin has no wheels for Python 3.13+, so newer interpreters build
+numpy from source and need a C toolchain. The `lerobot` compatibility tests
+need the real library; see [DEPENDENCIES.md](DEPENDENCIES.md) for the macOS
+install note.
 
 ## CLI
 
@@ -136,7 +134,9 @@ physics cannot disagree. Ships with `franka_panda` (7 joints) and `so101`
 pytest
 ```
 
-33 acceptance tests, written from [SPEC.md](SPEC.md) before the implementation:
+33 acceptance tests, written from [SPEC.md](SPEC.md) before the implementation.
+29 run out of the box; the 4 `lerobot` compatibility tests skip unless the
+optional package is installed.
 
 - **Synthetic round-trip** — known joint trajectory → render → full pipeline →
   compare recovered EE pose. The core regression.
@@ -165,6 +165,11 @@ Absolute metric scale from a single un-instrumented camera (the marker frontend
 is metric; the hand frontend approximates from a nominal hand size); contact
 forces or dynamics; real-time on-robot execution; multi-camera fusion. See
 [SPEC.md](SPEC.md) §6.
+
+The MediaPipe hand frontend is implemented and import-guarded but not yet
+validated against real footage — every measured number here comes from the
+ArUco marker path on synthetic clips. [HANDOFF.md](HANDOFF.md) lists the rest
+of the known gaps.
 
 ## Layout
 

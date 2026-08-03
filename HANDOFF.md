@@ -1,10 +1,12 @@
 # Handoff
 
-State of vid2traj at the end of the autonomous build session (2026-07-27).
+State of vid2traj as of 2026-07-27.
 
-- Repo: https://github.com/TarunYadgirkar/vid2traj (private)
+- Repo: https://github.com/TarunYadgirkar/vid2traj
 - Site: https://vid2traj.vercel.app
-- `pytest` → **33 passed**
+- `pytest` → **29 passed, 1 skipped** on a plain checkout; the skip is the whole
+  `lerobot` compatibility module (4 tests), which runs and passes once the
+  optional package is installed — **33 passed**
 
 ---
 
