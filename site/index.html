@@ -367,10 +367,13 @@ videos/observation.images.side/…</code></div>
 
     <div class="rule-card rise">
       <h3>What happens when it cannot solve a frame</h3>
-      <p>It holds the last pose it trusts, and says so. A held frame is marked in the review
-         page in amber and counted in the safety report. The failure mode is a robot that
-         pauses, not a robot that lunges. That is the only behaviour a demonstration dataset
-         is allowed to have.</p>
+      <p>Two different failures, marked two different ways. A pose the safety pass rejects —
+         self-collision that survives rate limiting — falls back to the last one it trusts:
+         amber in the review page, counted as held in the safety report. A frame perception
+         never saw is marked unobserved instead; short gaps are interpolated, long ones hold
+         the last solved pose rather than chase noise. Either way the failure mode is a robot
+         that pauses, not a robot that lunges. That is the only behaviour a demonstration
+         dataset is allowed to have.</p>
     </div>
   </div>
 </section>
