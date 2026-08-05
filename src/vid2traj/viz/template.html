@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>vid2traj — retarget review</title>
+<meta name="description" content="Frame-by-frame review of a vid2traj conversion: the source video beside the retargeted robot in simulation, with per-frame registration and joint telemetry.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230A0C10'/><rect x='7' y='7' width='18' height='18' fill='%23EFEDE7'/><rect x='11' y='11' width='5' height='5' fill='%230A0C10'/><rect x='18' y='16' width='5' height='6' fill='%230A0C10'/></svg>">
 <style>
 :root{
@@ -41,6 +42,7 @@ body{
   padding-bottom:18px;border-bottom:1px solid var(--rule);
 }
 .wordmark{
+  margin:0;
   font-family:var(--display);
   font-weight:800;
   font-size:clamp(30px,5vw,46px);
@@ -192,7 +194,7 @@ input[type=range]::-moz-range-thumb{width:3px;height:18px;background:var(--vellu
 
   <header class="masthead">
     <div>
-      <div class="wordmark">vid2traj<span>/review</span></div>
+      <h1 class="wordmark">vid2traj<span>/review</span></h1>
       <p class="tagline" id="tagline">Human demonstration on the left, the retargeted robot on the right, driven off one clock.</p>
     </div>
     <dl class="specs" id="specs"></dl>

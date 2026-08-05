@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://vid2traj.vercel.app/sitemap.xml

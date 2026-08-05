@@ -1,0 +1,9 @@
+# vid2traj
+
+Convert ordinary RGB video of a manipulation task into a robot-executable trajectory dataset. Video from a phone or webcam (no depth sensor) is turned into a per-frame wrist pose, lifted into a world-frame trajectory, smoothed, retargeted onto a specific robot with damped least-squares IK against a real MuJoCo model, safety-checked on every frame (joint, velocity, and acceleration limits, self-collision), and exported as a LeRobotDataset ready for imitation-learning training. Ships with Franka Panda and SO-101 configs; adding a robot is one YAML file, not a code change. On the bundled synthetic clip the recovered end-effector path tracks ground truth to 1.7 mm RMSE.
+
+## Links
+
+- Explainer and demo: https://vid2traj.vercel.app
+- Frame-by-frame review: https://vid2traj.vercel.app/review.html
+- Source: https://github.com/TarunYadgirkar/vid2traj
