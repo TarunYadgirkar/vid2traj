@@ -15,9 +15,16 @@ safety pass → a `LeRobotDataset` you can train on.
 
 On the bundled synthetic marker clip (90 frames, Franka Panda), the recovered
 end-effector position tracks the ground-truth trajectory to **1.7 mm RMSE,
-4.8 mm worst frame**, with every emitted frame inside the robot's joint,
+4.7 mm worst frame**, with every emitted frame inside the robot's joint,
 velocity, and acceleration limits and free of self-collision. Orientation is
 held under a 5° RMSE bound by the same regression test.
+
+> **What that number covers.** The clip is synthetic: a rendered ArUco marker
+> following a known path, which is what makes ground truth available. It is not
+> real hand video. The bare-hand (MediaPipe) frontend is implemented but has not
+> been measured on real footage, so no accuracy claim here applies to it yet.
+
+![Terminal recording: vid2traj synth renders a 90-frame clip, then vid2traj convert writes a LeRobot dataset and reports 0 held frames and 0 collisions](assets/generated/vid2traj-demo.gif)
 
 ## Quick start
 
@@ -43,7 +50,7 @@ vid2traj viz demo/dataset --video demo/clip.mp4 --out review.html
 
 `review.html` is a single self-contained file: the source video beside the
 retargeted robot in sim, driven off one clock, with a per-frame registration
-strip and joint telemetry. Open it directly — no server needed.
+strip and joint telemetry. Open it directly; no server needed.
 
 ## Install notes
 
@@ -106,7 +113,7 @@ the "world" frame is simply the camera frame.
 
 ## Adding a robot
 
-Add one YAML file under `configs/embodiments/`. No code changes — nothing in
+Add one YAML file under `configs/embodiments/`. No code changes: nothing in
 the retargeting, safety, or export layers branches on the robot.
 
 ```yaml
@@ -136,25 +143,27 @@ pytest
 
 56 tests. The 33 acceptance tests were written from [SPEC.md](SPEC.md) before the
 implementation; the rest pin the math and the CLI contract. 52 run out of the box;
-the 4 `lerobot` compatibility tests skip unless the optional package is installed.
+the 4 `lerobot` compatibility tests live in one module that skips unless the
+optional package is installed, so pytest reports `52 passed, 1 skipped`.
 
-- **Synthetic round-trip** — known joint trajectory → render → full pipeline →
+- **Synthetic round-trip:** known joint trajectory → render → full pipeline →
   compare recovered EE pose. The core regression.
-- **Safety** — every emitted frame re-checked for joint limits and
+- **Safety:** every emitted frame re-checked for joint limits and
   self-collision in MuJoCo, plus a test that the checker actually rejects a
   known-bad pose.
-- **Smoothness** — no velocity or acceleration above the robot's datasheet limits.
-- **LeRobot** — the export loads and iterates under the real `lerobot` package.
-- **Determinism** — two runs, SHA-256 of the Parquet and MP4 must match.
-- **Degradation** — occlusion, subject leaving frame, two people, blank video.
-- **Embodiments** — a third robot defined at runtime from YAML alone.
-- **Math invariants** — the analytic site Jacobian differenced numerically against
+- **Smoothness:** no velocity or acceleration above the robot's datasheet limits.
+- **LeRobot:** the export loads and iterates under the real `lerobot` package.
+- **Determinism:** two runs, SHA-256 of the Parquet and MP4 must match.
+- **Degradation:** occlusion, subject leaving frame, two people, blank video.
+- **Embodiments:** a third robot defined at runtime from YAML alone.
+- **Math invariants:** the analytic site Jacobian differenced numerically against
   forward kinematics on both embodiments, plus algebraic identities for the
   transform, quaternion-hemisphere, and SLERP-gap helpers the IK loop rides on.
-- **CLI** — a wrong embodiment name, a missing video, or camera intrinsics that
+- **CLI:** a wrong embodiment name, a missing video, or camera intrinsics that
   disagree with the clip's resolution exits 2 with a readable message, not a traceback.
 
-Regenerate the committed fixture clips and the site assets:
+Regenerate the committed fixture clips, then the site assets (media, `stats.json`,
+and `review.html`, all from one real pipeline run):
 
 ```bash
 python scripts/make_fixtures.py
@@ -172,7 +181,7 @@ forces or dynamics; real-time on-robot execution; multi-camera fusion. See
 [SPEC.md](SPEC.md) §6.
 
 The MediaPipe hand frontend is implemented and import-guarded but not yet
-validated against real footage — every measured number here comes from the
+validated against real footage. Every measured number here comes from the
 ArUco marker path on synthetic clips. [HANDOFF.md](HANDOFF.md) lists the rest
 of the known gaps.
 
