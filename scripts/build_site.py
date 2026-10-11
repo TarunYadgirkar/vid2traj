@@ -164,6 +164,14 @@ def main() -> int:
     from vid2traj.render.robot import render_robot_video
     render_robot_video(traj, embodiment, media / "robot.mp4", width=960, height=720)
 
+    from vid2traj.viz.html import build_visualization
+    build_visualization(
+        args.out / "_dataset", source, args.out / "review.html", embodiment,
+        trajectory=traj, report=result.safety_report, wrist=result.wrist_trajectory,
+        robot_video=media / "robot.mp4", ground_truth_positions=truth,
+        task="synthetic marker clip, known ground truth",
+    )
+
     error = np.linalg.norm(traj.ee_positions - truth, axis=1)
     stats = {
         "rmseMm": round(float(np.sqrt(np.mean(error ** 2))) * 1000, 2),
